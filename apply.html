@@ -81,8 +81,8 @@
         <label style="display: flex; align-items: center; justify-content: space-between; gap: 10px; border: 1.5px dashed #D8D3C8; border-radius: 10px; padding: 12px 14px; cursor: pointer; background: #F7F5F1; box-sizing: border-box;">
           <span id="resumeLabel" style="font-size: 14px; color: #6B7280; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">No file chosen</span>
           <span style="background: #D97B3F; color: #ffffff; font-size: 13px; font-weight: 700; padding: 8px 14px; border-radius: 8px; flex-shrink: 0;">Choose File</span>
-          <input type="file" accept=".pdf,.doc,.docx" onchange="madoResumeChange(this)" style="display: none;">
-        </label>
+          <input type="file" id="resumeFile" accept=".pdf,.doc,.docx" onchange="madoResumeChange(this)" style="display: none;">        
+      </label>
       </div>
 
       <div style="height: 1px; background: #E4E0D8; margin: 6px 0;"></div>
@@ -166,50 +166,112 @@
       : "We'll reach out by phone or email once we've reviewed your application.";
   };
 
+  
   window.madoSubmit = function(e) {
-    e.preventDefault();
-    var firstName = document.getElementById('firstName').value.trim();
-    var lastName = document.getElementById('lastName').value.trim();
-    var email = document.getElementById('email').value.trim();
-    var phone = document.getElementById('phone').value.trim();
+  e.preventDefault();
 
-    if (!firstName || !lastName || !email || !phone ||
-        state.age21 === null || state.license === null || state.drug === null || state.eligible === null) {
-      alert('Please fill in every field and answer all four questions before submitting.');
-      return;
-    }
+  var firstName = document.getElementById('firstName').value.trim();
+  var lastName = document.getElementById('lastName').value.trim();
+  var email = document.getElementById('email').value.trim();
+  var phone = document.getElementById('phone').value.trim();
 
-    var btn = e.currentTarget;
-    var originalText = btn.textContent;
-    btn.textContent = 'Submitting...';
-    btn.style.pointerEvents = 'none';
-    btn.style.opacity = '0.7';
+  var resumeInput = document.getElementById('resumeFile');
+  var resumeFile = resumeInput.files && resumeInput.files[0];
+
+  // Make resume REQUIRED
+  if (!firstName || !lastName || !email || !phone || !resumeFile ||
+      state.age21 === null ||
+      state.license === null ||
+      state.drug === null ||
+      state.eligible === null) {
+
+    alert('Please fill in every field, upload your resume, and answer all four questions.');
+    return;
+  }
+
+  // Limit resume size to 5 MB
+  if (resumeFile.size > 5 * 1024 * 1024) {
+    alert('Resume must be 5 MB or smaller.');
+    return;
+  }
+
+  var btn = e.currentTarget;
+  btn.textContent = 'Submitting...';
+  btn.style.pointerEvents = 'none';
+  btn.style.opacity = '0.7';
+
+  var reader = new FileReader();
+
+  reader.onload = function(event) {
+
+    // Remove data:application/pdf;base64, etc.
+    var base64Data = event.target.result.split(',')[1];
 
     var params = new URLSearchParams();
+
     params.append('name', firstName + ' ' + lastName);
     params.append('email', email);
     params.append('phone', '+1 ' + phone);
-    params.append('resume', state.resumeName || 'not attached');
+
     params.append('age21', state.age21 ? 'true' : 'false');
     params.append('license', state.license ? 'true' : 'false');
     params.append('drug', state.drug ? 'true' : 'false');
     params.append('eligible', state.eligible ? 'true' : 'false');
 
-    fetch('https://script.google.com/macros/s/AKfycbxf7gfr1yaU-zIR8AFH6_6adaM28ESKkLJt36pBcmQSKBdIb9mo12v6o-rj7NZYaorI/exec', {
-      method: 'POST',
-      mode: 'no-cors',
-      body: params
-    })
-      .then(function () { showThankYou(); })
-      .catch(function () { showThankYou(); });
+    // Resume
+    params.append('resumeName', resumeFile.name);
+    params.append(
+      'resumeType',
+      resumeFile.type || 'application/octet-stream'
+    );
+    params.append('resumeData', base64Data);
 
-    function showThankYou() {
-      document.getElementById('applyFormCard').style.display = 'none';
-      var ty = document.getElementById('applyThankYou');
-      ty.style.display = 'flex';
-      ty.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
+    fetch(
+      'https://script.google.com/macros/s/AKfycbxx2_xlkltEFJCI6-dMnzPFLmkS-d0etDfRo8Xv8JjjIzjQ-UE5f4jpM952_8slKwj6/exec',
+      {
+        method: 'POST',
+        mode: 'no-cors',
+        body: params
+      }
+    )
+    .then(function() {
+      showThankYou();
+    })
+    .catch(function(error) {
+      console.error(error);
+
+      alert(
+        'There was a problem submitting your application. Please try again.'
+      );
+
+      btn.textContent = 'Submit Application';
+      btn.style.pointerEvents = 'auto';
+      btn.style.opacity = '1';
+    });
   };
+
+  reader.onerror = function() {
+    alert('There was a problem reading your resume. Please try another file.');
+
+    btn.textContent = 'Submit Application';
+    btn.style.pointerEvents = 'auto';
+    btn.style.opacity = '1';
+  };
+
+  reader.readAsDataURL(resumeFile);
+
+  function showThankYou() {
+    document.getElementById('applyFormCard').style.display = 'none';
+
+    var ty = document.getElementById('applyThankYou');
+    ty.style.display = 'flex';
+
+    ty.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center'
+    });
+  }
+};
 })();
 </script>
 
