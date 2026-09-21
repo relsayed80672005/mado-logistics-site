@@ -141,7 +141,7 @@
 
 <script>
 (function(){
-  var state = { age21: null, license: null, drug: null, eligible: null, resumeName: '' };
+  var state = { age21: null, license: null, drug: null, eligible: null, resumeName: '', resumeData: '', resumeType: '' };
 
   window.madoToggle = function(field, value, yesId, noId) {
     state[field] = value;
@@ -164,6 +164,20 @@
     hint.textContent = state.resumeName
       ? ('Resume selected: \u201c' + state.resumeName + '\u201d. We\u2019ll reach out by phone or email once we\u2019ve reviewed your application.')
       : "We'll reach out by phone or email once we've reviewed your application.";
+
+    if (f) {
+      var reader = new FileReader();
+      reader.onload = function () {
+        var result = reader.result || '';
+        var commaIdx = result.indexOf(',');
+        state.resumeData = commaIdx >= 0 ? result.slice(commaIdx + 1) : '';
+        state.resumeType = f.type || 'application/octet-stream';
+      };
+      reader.readAsDataURL(f);
+    } else {
+      state.resumeData = '';
+      state.resumeType = '';
+    }
   };
 
   window.madoSubmit = function(e) {
@@ -190,6 +204,11 @@
     params.append('email', email);
     params.append('phone', '+1 ' + phone);
     params.append('resume', state.resumeName || 'not attached');
+    if (state.resumeData) {
+      params.append('resumeData', state.resumeData);
+      params.append('resumeName', state.resumeName);
+      params.append('resumeType', state.resumeType);
+    }
     params.append('age21', state.age21 ? 'true' : 'false');
     params.append('license', state.license ? 'true' : 'false');
     params.append('drug', state.drug ? 'true' : 'false');
