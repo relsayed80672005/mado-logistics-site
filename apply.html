@@ -120,7 +120,6 @@
       </div>
 
       <a href="#" onclick="madoSubmit(event)" class="mado-btn" style="background: #D97B3F; color: #ffffff; padding: 17px 0; border-radius: 10px; text-decoration: none; font-weight: 700; font-size: 17px; text-align: center; margin-top: 8px;">Submit Application</a>
-      <span id="submitHint" style="font-size: 12.5px; color: #9AA0AC; text-align: center;">We'll reach out by phone or email once we've reviewed your application.</span>
 
     </div>
 
@@ -160,10 +159,6 @@
     var f = input.files && input.files[0];
     state.resumeName = f ? f.name : '';
     document.getElementById('resumeLabel').textContent = state.resumeName || 'No file chosen';
-    var hint = document.getElementById('submitHint');
-    hint.textContent = state.resumeName
-      ? ('Resume selected: \u201c' + state.resumeName + '\u201d. We\u2019ll reach out by phone or email once we\u2019ve reviewed your application.')
-      : "We'll reach out by phone or email once we've reviewed your application.";
 
     if (f) {
       var reader = new FileReader();
@@ -218,9 +213,9 @@
       method: 'POST',
       mode: 'no-cors',
       body: params
-    })
-      .then(function () { showThankYou(); })
-      .catch(function () { showThankYou(); });
+    }).catch(function () { /* ignore - submission still sent */ });
+
+    showThankYou();
 
     function showThankYou() {
       document.getElementById('applyFormCard').style.display = 'none';
